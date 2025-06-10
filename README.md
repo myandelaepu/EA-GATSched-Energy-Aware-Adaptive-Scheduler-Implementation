@@ -61,9 +61,9 @@ pip install torch==2.1.0 torch-geometric==2.4.0 pandas==2.1.1 numpy==1.24.3 \
 mkdir -p data
 
 # Download HPC workload traces
-wget -O data/HPC-POLARIS_traces.csv https://reports.alcf.anl.gov/data/HPC-POLARIS_traces.csv
-wget -O data/HPC-MIRA_traces.csv https://reports.alcf.anl.gov/data/HPC-MIRA_traces.csv
-wget -O data/HPC-COOLEY_traces.csv https://reports.alcf.anl.gov/data/HPC-COOLEY_traces.csv
+wget -O data/HPC-POLARIS_traces.csv https://reports.alcf.anl.gov/data/polaris.html#DIM_JOB_COMPOSITE
+wget -O data/HPC-MIRA_traces.csv https://reports.alcf.anl.gov/data/mira.html#DIM_JOB_COMPOSITE
+wget -O data/HPC-COOLEY_traces.csv https://reports.alcf.anl.gov/data/cooley.html#DIM_JOB_COMPOSITE
 
 # Usage
 Basic Usage
