@@ -172,6 +172,15 @@ python -m pytest tests/
 black src/
 flake8 src/
 
+# Troubleshooting
+Common Issues
+CUDA/GPU Issues
+bash# Check CUDA availability
+python -c "import torch; print(torch.cuda.is_available())"
+
+# Install CPU-only version if needed
+pip install torch==2.1.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
 # Acknowledgments
-Argonne Leadership Computing Facility for providing HPC workload datasets and University of Kansas for providing platform and support.
+Argonne Leadership Computing Facility for providing HPC workload datasets and University of Kansas for providing platform and support.  
 
