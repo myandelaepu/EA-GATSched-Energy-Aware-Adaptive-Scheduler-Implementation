@@ -1,186 +1,207 @@
 # EA-GATSched: Energy-Aware Adaptive Scheduler Implementation
-A novel HPC scheduling framework leveraging Graph Attention Networks (GAT) and Multi-Objective Reinforcement Learning (MORL) to intelligently optimize both energy consumption and computational performance.
 
-# https://www.python.org/downloads/
-# https://pytorch.org/
+A graph-attention (GATv2) and adaptive multi-objective reinforcement-learning
+(PPO) scheduler for energy-aware HPC batch scheduling. This repository
+accompanies the manuscript *"EA-GATSched: Graph Attention Networks and
+Adaptive Multi-Objective Reinforcement Learning for Energy-Aware HPC Batch
+Scheduling"* (Kyrian C. Adimora and Hongyang Sun, University of Kansas)*.
 
-# Overview
-EA-GATSched introduces an energy-aware Graph Attention Network scheduler that revolutionizes job scheduling in High-Performance Computing (HPC) systems. Our approach achieves 28-35% energy consumption reduction compared to baseline SLURM-like schedulers while improving traditional performance metrics.
+- **Implementation notebook**: [`Energy_Aware_Adaptive_Scheduler_Implementation.ipynb`](./Energy_Aware_Adaptive_Scheduler_Implementation.ipynb)
+- **GEOPM power-model fitting notebook (Kaggle)**: https://www.kaggle.com/code/kyrianadimora/notebook4053448c85/edit
 
-# Key Features
-a)  Graph Attention Networks: Intelligent job scheduling using GAT-based decision making
-b)  Energy Optimization: Multi-objective policy network balancing performance and energy efficiency
-c)  System-Specific Tuning: Optimized configurations for different HPC architectures
-d)  Comprehensive Benchmarking: Quantitative evaluation against traditional scheduling systems and ML-based Scheduling Approaches
-e)  Easy Deployment: Ready-to-use Google Colab implementation
+## Overview
 
-# Main Contributions
-C₁: Energy-aware GAT scheduler optimizing job scheduling with energy efficiency, performance, and load balancing
-C₂: Multi-objective policy network adapting decisions based on system configurations and runtime conditions
-C₃: Machine-specific parameter configurations for Polaris, Mira, and Cooley supercomputing systems
-C₄: Improved energy consumption modeling preventing unrealistic estimates
-C₅: Comprehensive benchmarking framework demonstrating significant improvements over SLURM-like systems and ML-based Scheduling Approaches
+EA-GATSched combines three pieces to lower facility energy under a hard
+power budget:
 
-# Quick Start
-Option 1: Google Colab (Recommended)
-The fastest way to get started:
-1. Open our Colab notebook:
-   # https://colab.research.google.com/drive/1xmEG9gnKiNIKOSs0DHWnfO654NC7awG2#scrollTo=UmagVTKMNuzb
-2. Select GPU runtime: Runtime → Change runtime type → GPU
-3. Run all cells: Runtime → Run all
-4. Follow the notebook: All datasets, training, and visualizations are included
+1. A **GATv2 graph encoder** that represents queued and running jobs
+   together with their resource conflicts and dependencies as a dynamic
+   job graph (Section 4 of the paper).
+2. A **component-level power model** whose functional form and free
+   parameters are fit to real GEOPM node telemetry and validated on a
+   disjoint, node-grouped hold-out set (Section 5).
+3. A **PPO policy** whose three reward terms -- energy, throughput,
+   utilization -- are combined with weights produced by a small
+   state-conditioned network, rather than fixed in advance (Section 7).
 
-# Option 2: Local Installation
-# Prerequisites
-# Hardware Requirements:
+Replaying 389,604 production jobs from three ALCF systems (Polaris, Mira,
+Cooley) in a discrete-event simulator, EA-GATSched reduces energy by
+**27.3-56.6%** against four classical schedulers (SLURM, PBS Pro, LSF,
+Volcano) and by **14.3-30.2%** against two learned baselines (DeepRM,
+Decima), at a throughput cost on two of the three systems (Table 6 of the
+paper). A reduced-scale, fully executed diagnostic study (Section 9)
+additionally shows where the adaptive weighting sits relative to a swept
+fixed-weight Pareto front, and how scheduling quality degrades as
+power-model error grows.
 
-a) CUDA-capable GPU with 8GB+ memory (recommended)
-b) 16GB RAM minimum (32GB recommended)
-c) 4+ core CPU (8+ cores recommended)
+## Key Contributions
 
-# Software Requirements:
-a) Python 3.8+
-b) CUDA Toolkit 11.8+
+- **C1**: A GATv2-based dynamic job graph encoder over queued/running jobs,
+  their resource conflicts, and workflow dependencies.
+- **C2**: A component-level GEOPM-calibrated power model, validated with a
+  real, node-grouped hold-out (not just fit residuals).
+- **C3**: A state-conditioned, adaptive objective-weighting scheme for the
+  PPO reward, evaluated against a swept fixed-weight Pareto front.
+- **C4**: A 389,604-job, three-system (Polaris/Mira/Cooley) evaluation
+  against six re-implemented baselines (SLURM, PBS Pro, LSF, Volcano,
+  DeepRM, Decima).
+- **C5**: A reduced-scale but fully executed diagnostic simulator releasing
+  runnable code for the Pareto sweep, power-model error-injection
+  sensitivity, and weight-dynamics analyses.
 
-# Installation Steps
+## Repository Contents
 
-# Clone the repository
-git clone https://github.com/yourusername/EA-GATSched-Energy-Aware-Adaptive-Scheduler-Implementation.git
+This repository currently holds the implementation notebook and its
+documentation:
+
+```
+.
+├── Energy_Aware_Adaptive_Scheduler_Implementation.ipynb   # Full implementation (data prep, GATv2 encoder,
+│                                                           #   PPO training, evaluation, plotting)
+└── README.md
+```
+
+Key components defined in the notebook: `EnergyAwareGATEncoder`,
+`EnergyAwareGATScheduler`, `MultiObjectivePolicyNetwork`, `PowerProfile`,
+`EnergyConfig`, `MultiObjectiveMetrics`, `JobSchedulerDataset` /
+`EnhancedJobSchedulerDataset`, and `SchedulingSystem` /
+`EnhancedSchedulingSystem`.
+
+The manuscript's figure-generation scripts (`make_power_kaggle_figure.py`,
+`make_figures.py`, `reference_simulator.py`) and the LaTeX source live in
+the paper's companion project and are not part of this notebook repo; if
+you would like them added here as well (for full end-to-end
+reproducibility of every manuscript figure from one place), open an issue
+and they can be merged in.
+
+## Quick Start
+
+### Option 1: Google Colab / Jupyter (recommended)
+
+1. Open `Energy_Aware_Adaptive_Scheduler_Implementation.ipynb` directly in
+   Google Colab (via GitHub → Open in Colab) or in a local Jupyter
+   environment.
+2. Select a GPU runtime: Runtime -> Change runtime type -> GPU.
+3. Run all cells. The notebook loads and preprocesses the workload traces,
+   builds the job graph, trains the GATv2 + PPO scheduler, and produces the
+   evaluation plots described below.
+
+### Option 2: Local installation
+
+**Hardware.** A CUDA-capable GPU with 8GB+ memory is recommended for
+training; the notebook also runs on CPU (slower). 16GB+ RAM recommended.
+
+**Software.** Python 3.8+, and the packages the notebook imports:
+
+```bash
+git clone https://github.com/myandelaepu/EA-GATSched-Energy-Aware-Adaptive-Scheduler-Implementation.git
 cd EA-GATSched-Energy-Aware-Adaptive-Scheduler-Implementation
 
-# Create virtual environment
 python -m venv ea_gat_env
 source ea_gat_env/bin/activate  # On Windows: ea_gat_env\Scripts\activate
 
-# Install dependencies
-pip install torch==2.1.0 torch-geometric==2.4.0 pandas==2.1.1 numpy==1.24.3 \
-    matplotlib==3.8.0 seaborn==0.12.2 scikit-learn==1.3.0 tqdm==4.66.1
+pip install torch torch-geometric pandas numpy matplotlib seaborn \
+    scikit-learn networkx tqdm jupyter
+```
 
-# Download Datasets
-# Create data directory
-mkdir -p data
+Then launch Jupyter and run the notebook top to bottom:
 
-# Download HPC workload traces
-wget -O data/HPC-POLARIS_traces.csv https://reports.alcf.anl.gov/data/polaris.html#DIM_JOB_COMPOSITE
-wget -O data/HPC-MIRA_traces.csv https://reports.alcf.anl.gov/data/mira.html#DIM_JOB_COMPOSITE
-wget -O data/HPC-COOLEY_traces.csv https://reports.alcf.anl.gov/data/cooley.html#DIM_JOB_COMPOSITE
+```bash
+jupyter notebook Energy_Aware_Adaptive_Scheduler_Implementation.ipynb
+```
 
-# Usage
-Basic Usage
-pythonfrom src.energy_aware_scheduler import EnergyAwareScheduler
+### Workload traces
 
-# Initialize scheduler
-scheduler = EnergyAwareScheduler([
-    'data/HPC-POLARIS_traces.csv',
-    'data/HPC-MIRA_traces.csv',
-    'data/HPC-COOLEY_traces.csv'
-])
+The manuscript's main results (Table 6) use production job traces from
+three ALCF systems, summarized in Table 5 of the paper:
 
-# Load and preprocess data
-scheduler.load_and_preprocess_data()
+| System  | Jobs    | Period    | Nodes  | Hardware        |
+|---------|---------|-----------|--------|-----------------|
+| Polaris | 241,772 | 2024      | 560    | A100, HDR IB    |
+| Mira    | 52,154  | 2018-19   | 49,152 | Blue Gene/Q     |
+| Cooley  | 95,678  | 2018-19   | 126    | Haswell         |
 
-# Train models for each system
-for machine_name in ['POLARIS', 'MIRA', 'COOLEY']:
-    dataset = scheduler.datasets[f'data/HPC-{machine_name}_traces.csv']
-    scheduler.train_model(machine_name, dataset)
+These are ALCF operational job traces and are not redistributed in this
+repository. They are available from the ALCF reporting dashboards
+(https://reports.alcf.anl.gov), which are interactive HTML/BI report pages
+rather than direct file endpoints -- so obtaining an extract means using
+the dashboard's own export/query tools for the relevant system and date
+range, not a single `wget`/`curl` command against the dashboard URL.
 
-# Evaluate performance
-results = {}
-for machine_name in ['POLARIS', 'MIRA', 'COOLEY']:
-    results[machine_name] = scheduler.evaluate_model(machine_name)
+## GEOPM Power-Model Fitting
 
-# Generate visualizations
-scheduler.plot_energy_efficiency()
-scheduler.plot_throughput_comparison()
-scheduler.plot_resource_utilization()
+The component-level power model used throughout the paper,
 
-# Expected Runtime
-# Task                           Time Estimate 
-Dataset Setup:                   15-30 minutes 
-Model Training:                  3-12 hours
-Evaluation & Analysis:           1-4 hours
-Training time varies by dataset size and hardware
+```
+P(f) = 149.481 + 9.692e-22 * f^1.199   [W], f in Hz
+```
 
-# Architecture
-Workflow Overview
-Data Preprocessing → Graph Construction → Model Training → Performance Evaluation
-       ↓                    ↓               ↓                    ↓
-   Feature Engineering   Node/Edge      GAT Training      Visualization
-   Energy Calculation   Creation       Policy Optimization   Benchmarking
-   
-Key Components
-1. EnergyAwareGATScheduler: Core GAT-based scheduling algorithm
-2. MultiObjectivePolicyNetwork: Balances energy and performance objectives
-3. SystemSpecificConfigurator: Applies machine-specific optimizations
-4. EnergyConsumptionModeler: Accurate energy estimation and modeling
-5. BenchmarkingFramework: Comprehensive performance evaluation
+was fit to 8,555,779 raw GEOPM samples (3,456 nodes) from the public ALCF
+GEOPM dataset (`power_balancer` policy, 155 W cap, `dgemm` benchmark) and
+validated on a disjoint, **node-grouped** hold-out of 2,139,222 samples (864
+nodes): MAE = 8.93 W, RMSE = 15.42 W, MAPE = 7.33% (Table 2 and Figure 1 of
+the paper). The data-parsing and curve-fitting pipeline is a runnable
+Kaggle notebook:
 
-# Outputs
-The system generates:
+https://www.kaggle.com/code/kyrianadimora/notebook4053448c85/edit
 
-# Performance Metrics
-a) Energy consumption reduction percentages
-b) Job throughput measurements
-c) Resource utilization statistics
-d) Load balancing scores
-e) Waiting time improvements
+## Validating Results Against the Paper
 
-# Visualizations
-a) Energy efficiency over time plots
-b) Resource utilization heat maps
-c) Multi-objective optimization trade-offs
-d) Comparative analysis charts
+When checking notebook output against the manuscript, use these figure/table
+references (not the numbers from earlier drafts of this README):
 
-# Model Artifacts
-a) Trained PyTorch models for each HPC system
-b) Configuration files with optimized parameters
-c) Evaluation results in CSV format
+1. **Power-model accuracy**: Table 2 and Figure 1 -- MAE 8.93 W, RMSE
+   15.42 W, MAPE 7.33% on the real, node-grouped hold-out (not 28-35%,
+   which was an earlier placeholder figure for a different metric).
+2. **Energy reduction**: Table 6 -- 27.3-56.6% vs. the four classical
+   baselines, 14.3-30.2% vs. the two learned baselines, per system.
+3. **Ablation**: Table 7 and Figure 8 -- component-wise contribution to
+   the energy reduction on Polaris.
+4. **Scalability**: Table 8 and Figure 9 -- GATv2 inference latency vs.
+   node count.
+5. **Diagnostic study**: Section 9 and Figures 10-12 -- Pareto
+   positioning, power-model error-injection sensitivity, and weight
+   dynamics, on the reduced-scale reference simulation (explicitly not a
+   re-run of the full 389,604-job ALCF study; see Section 10 for the
+   itemized simulator scope).
 
-# Validation
-To validate results against published research:
-1. Energy Reduction: Compare with Table 4 values (28-35% improvement)
-2. System Configurations: Verify optimal results from machine-specific tuning
-3. Energy Modeling: Confirm realistic energy estimates without outliers
-4. Multi-objective Policy: Validate adaptive decision-making capabilities
-5. Visualizations: Match patterns in Figures 4-7 from the paper
+## Outputs
 
-# Contributing
-We welcome contributions! Please see our Contributing Guidelines for details.
-How to Contribute
-Types of Contributions
-We welcome several types of contributions:
-a) Bug fixes: Fix identified issues in the codebase
-b) Feature enhancements: Add new scheduling algorithms or optimization techniques
-c) Performance improvements: Optimize energy consumption or execution time
-d) Documentation: Improve README, docstrings, or add tutorials
-e) Tests: Add or improve test coverage
-Examples: Provide usage examples or case studies
+Running the notebook end to end produces:
 
-# Development Setup
+- Trained GATv2 + PPO model checkpoints per system (Polaris, Mira, Cooley).
+- Evaluation metrics: energy consumption, throughput, utilization, and
+  mean wait time, relative to each baseline.
+- The plots underlying Figures 6-9 of the paper (energy savings,
+  energy/throughput trade-off, ablation, scalability).
 
-# Clone and setup development environment
-git clone https://github.com/yourusername/EA-GATSched-Energy-Aware-Adaptive-Scheduler-Implementation.git
-cd EA-GATSched-Energy-Aware-Adaptive-Scheduler-Implementation
+## Contributing
 
-# Install development dependencies
-pip install -r requirements-dev.txt
+Bug reports and pull requests are welcome -- in particular, contributions
+that factor the notebook into a proper `src/` package with tests would be
+very useful for reuse. Please open an issue describing the change before
+submitting a substantial PR.
 
-# Run tests
-python -m pytest tests/
+## Citation
 
-# Format code
-black src/
-flake8 src/
+If you use this work, please cite:
 
-# Troubleshooting
-Common Issues
-CUDA/GPU Issues
-bash# Check CUDA availability
-python -c "import torch; print(torch.cuda.is_available())"
+```bibtex
+@article{Adimora2027EAGATSched,
+  author  = {Kyrian C. Adimora and Hongyang Sun},
+  title   = {{EA-GATSched}: Graph Attention Networks and Adaptive
+             Multi-Objective Reinforcement Learning for Energy-Aware
+             {HPC} Batch Scheduling},
+  journal = {Future Generation Computer Systems},
+  year    = {2027}
+}
+```
 
-# Install CPU-only version if needed
-pip install torch==2.1.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+(Volume/pages/DOI will be added once assigned by the journal.)
 
-# Acknowledgments
-Argonne Leadership Computing Facility for providing HPC workload datasets and University of Kansas for providing platform and support.  
+## Acknowledgments
 
+Argonne Leadership Computing Facility for the Polaris, Mira, and Cooley
+operational job traces and the public GEOPM telemetry dataset, and the
+University of Kansas Department of Electrical Engineering and Computer
+Science for platform and support.
