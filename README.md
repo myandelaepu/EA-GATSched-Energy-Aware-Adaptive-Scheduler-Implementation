@@ -41,15 +41,24 @@ figs/, tables/              generated figures and tables used by the manuscript
 2. Run `colab/ea_gatsched_v2.py` in Google Colab (see `RUN_V2_INSTRUCTIONS.md`). The reported run took 10,043 s.
 3. Copy the CSVs into `results_v2/`, then from the repository root run `python analysis/analyze.py`, `python analysis/make_figures.py`, `python analysis/make_tables.py`.
 
-Key settings: windows of 1,500 jobs; chronological 60/10/30 split; all non-overlapping test windows (Polaris 45, Mira 10, Cooley 19); 120 training episodes; seeds 0, 1, 2; 85% power cap; P_busy = 149.48 W, P_idle = 69.86 W (GEOPM Theta telemetry, applied to all machines as an assumption).
+Key settings: windows of 1,500 jobs; chronological 60/10/30 split; all non-overlapping test windows (Polaris 45, Mira 10, Cooley 19); 120 training episodes; seeds 0, 1, 2; 85% power cap; P_busy = 149.48 W, P_idle = 69.86 W (GEOPM Theta telemetry, applied to all machines as an assumption). `analysis/geopm_validate_full.py` re-measures the levels on the complete GEOPM dataset (53.5M samples; mean 149.46 W, minimum 44.81 W) and reports the energy-counter consistency check; its output is Appendix B of the paper.
 
 Note: `results_v2/paired_vs_easy.csv` (from the Colab run) averages per-window relative changes; the paper uses pooled ratios of means from `analysis/pairwise_pooled.csv`. The `CE nan` lines in the training log come from a window with no multi-candidate decisions and are not a training failure.
 
 ## Scope
 The simulator omits priorities, fair-share, reservations, failures and topology. The power cap only reduces capacity (it never slows jobs). GAT-BF orders backfill candidates only. Mira has 10 test windows, so its intervals are wide.
 
-## Overlap with earlier work
-The same traces were used in Adimora et al., Future Generation Computer Systems 186 (2027) 108763, doi:10.1016/j.future.2026.108763, whose protocol and policy differ from this controlled study.
-
 ## Acknowledgments
 Supported in part by the US National Science Foundation under Grant #2441633. Traces provided by the Argonne Leadership Computing Facility.
+
+## GEOPM power-level validation (Kaggle)
+
+The node-power levels used by the simulator come from the Theta GEOPM power-balancer traces (DGEMM, 155 W balancer setting, 8,640 trace files, 4,320 nodes, 53.5M rows).
+
+- Kaggle notebook: https://www.kaggle.com/code/kyrianadimora/geopm-validation
+- Kaggle dataset: https://www.kaggle.com/datasets/kyrianadimora/alcf-geopm-power-balancer-155w
+- Script (same code as the notebook): `analysis/geopm_validate_full.py`
+- Outputs: `analysis/geopm_validation.json`, `analysis/geopm_data_quality.csv`, `analysis/geopm_per_node.csv` (the per-file CSV, feature-correlation CSV and LaTeX table are produced by the notebook and are not stored here)
+- Reported in Appendix B of the paper. Runtime on Kaggle is about 100 minutes for the complete dataset.
+
+Main results: mean package power 149.46 W (std 15.45 W, min 44.81 W, max 177.15 W); per-node mean std 5.70 W; 38.5% of samples above 155 W (the setting is an average budget); reported power agrees with the energy-counter power to a mean absolute error of 6.15 W (4.19%). The dataset has one benchmark at one cap and no idle periods, so it cannot validate the idle level or a sweep over caps.
