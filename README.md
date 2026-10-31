@@ -4,12 +4,23 @@ Code, results and analysis for the manuscript *"Graph-Attention Backfill Orderin
 
 EA-GATSched is an energy-aware, graph-attention scheduler that combines a graph-attention policy with energy-aware objectives. This repository evaluates its backfill-ordering component, **GAT-BF**, under node-power models and power caps, on production job logs from three Argonne Leadership Computing Facility (ALCF) systems.
 
+## Run and verify online
+
+| What | Link |
+|---|---|
+| Colab notebook used for the experiments | https://colab.research.google.com/drive/1B1hxaVX_i4tYUbKHwJf23GJy0nyYKhQ9 |
+| Kaggle notebook for the GEOPM power-level validation | https://www.kaggle.com/code/kyrianadimora/geopm-validation |
+| Kaggle dataset (GEOPM power-balancer traces, 155 W) | https://www.kaggle.com/datasets/kyrianadimora/alcf-geopm-power-balancer-155w |
+| Source code and results | https://github.com/myandelaepu/EA-GATSched-Energy-Aware-Adaptive-Scheduler-Implementation |
+
+The ALCF job logs are not redistributed; download them from the ALCF Data Catalog (IEEE DataPort, DOI 10.21227/bhfr-wx19) and upload them to the Colab session as described in `colab/RUN_V2_INSTRUCTIONS.md`.
+
 ## What the study asks
 
 A batch scheduler repeatedly decides which waiting job runs next. With EASY backfilling, the job at the head of the queue gets a reservation, and other jobs may start early only if they cannot delay it. Several jobs often qualify, and EASY takes them in arrival order. The study asks three questions about that one choice:
 
 1. How much does the order of backfill candidates matter?
-2. Does a learned ordering beat a zero-parameter rule such as shortest-job-backfilled-first (SJBF)?
+2. Does a learned ordering beat a simple rule that needs no training such as shortest-job-backfilled-first (SJBF)?
 3. Does a better ordering save energy?
 
 It is examined at four scales: the single backfill decision (at most 32 candidates), the 1,500-job window, the system (126 to 49,152 nodes, with and without an 85% power cap), and the workload (377,234 jobs).
@@ -45,7 +56,10 @@ colab/ea_gatsched_v2.py              full pipeline: simulator, policies, trainin
 colab/RUN_V2_INSTRUCTIONS.md         how to run it in Google Colab
 colab/ea_gatsched_v3_residual.py     optional extension: residual-over-SJBF policy (see below; not part of the reported results)
 colab/README_V3_RESIDUAL.md          design and usage rules for the optional extension
+colab/ea_gatsched_v4_tradeoff.py     optional trade-off evaluation: slowdown versus tail and large-job wait, with an aging baseline
+colab/README_V4_TRADEOFF.md          its pre-specified design
 results_v2/                          outputs of the reported run (per-window results, summaries, run log)
+results_v3_residual_partial/         training log of an interrupted run of the optional residual policy (no test results saved)
 archive_v1_first_run/                outputs of the first run (20 Polaris test windows), kept for the sensitivity check
 analysis/analyze.py                  pooled ratios, bootstrap CIs, Wilcoxon with Holm correction, strata, seeds
 analysis/other_metrics.py            95th-percentile wait, utilization, throughput, makespan
@@ -61,7 +75,7 @@ figs/, tables/                       generated figures and tables used by the ma
 ## Reproducing the reported results
 
 1. Obtain the ALCF job logs (`DIM_JOB_COMPOSITE`: Polaris, Mira, Cooley) from the ALCF Data Catalog on IEEE DataPort (DOI 10.21227/bhfr-wx19). They are not redistributed here.
-2. Run `colab/ea_gatsched_v2.py` in Google Colab, following `colab/RUN_V2_INSTRUCTIONS.md`. Put the four `ANL-ALCF-DJC-*.csv.gz` files in `/content/data` or set `EA_DATA_DIR`. Use `EA_FAST=1` for a short smoke test. The reported run took 10,043 s on a Colab runtime. Save the results zip to Drive as soon as the run finishes.
+2. Run `colab/ea_gatsched_v2.py` in Google Colab (or open the Colab notebook linked above), following `colab/RUN_V2_INSTRUCTIONS.md`. Put the four `ANL-ALCF-DJC-*.csv.gz` files in `/content/data` or set `EA_DATA_DIR`. Use `EA_FAST=1` for a short smoke test. The reported run took 10,043 s on a Colab runtime. Save the results zip to Drive as soon as the run finishes.
 3. Copy the output CSVs into `results_v2/`, then from the repository root run:
 
 ```
@@ -93,7 +107,7 @@ Main results: mean package power 149.46 W (standard deviation 15.45 W, minimum 4
 
 ## Optional extension: residual-over-SJBF policy (GAT-BF-R)
 
-`colab/ea_gatsched_v3_residual.py` trains a policy whose starting point is exactly SJBF (logit = minus the SJBF rank plus a learned residual initialised at zero). REINFORCE fine-tunes the residual against SJBF, and a fine-tuned checkpoint replaces SJBF only if it beats SJBF on the validation windows by a fixed margin. Windows, metrics and statistics are unchanged. The design constants are fixed in advance and the script is meant to be run once and reported whatever the outcome; see `colab/README_V3_RESIDUAL.md`. Results from this script are not part of the reported results above.
+`colab/ea_gatsched_v3_residual.py` trains a policy whose starting point is exactly SJBF (logit = minus the SJBF rank plus a learned residual initialised at zero). REINFORCE fine-tunes the residual against SJBF, and a fine-tuned checkpoint replaces SJBF only if it beats SJBF on the validation windows by a fixed margin. Windows, metrics and statistics are unchanged. The design constants are fixed in advance and the script is meant to be run once and reported whatever the outcome; see `colab/README_V3_RESIDUAL.md`. Results from this script are not part of the reported results above. An interrupted run is logged in `results_v3_residual_partial/run_log_partial.txt`: on Polaris and Mira, 11 of 12 models stayed identical to SJBF because none beat it on validation windows, and the 12th (Mira, uncapped) was unstable. The run was stopped during Cooley and no test results were saved.
 
 ## Scope and limitations
 
